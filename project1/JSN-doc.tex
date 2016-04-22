@@ -1,0 +1,100 @@
+%Encoding: utf8
+%Author: Pavol Loffay, xloffa00@stud.fit.vutbr.cz
+%Date: 24.02.2012
+%Project: Dokumentacia k projektu do predmetu IPP,
+%Dokumenta k zadaniu JSON - prevod formatu JSON do XML
+
+
+\documentclass[10pt,a4paper]{article}
+
+%preambule
+\usepackage[czech]{babel}
+\usepackage[top=2.5cm, left=1.5cm, text={18cm, 25cm}]{geometry}
+\usepackage[IL2]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\newcommand\czuv[1]{\quotedblbase #1\textquotedblleft}
+
+
+%textova cast
+\begin{document}
+
+\noindent Dokumentace úlohy JSN: JSON2XML v~Perl do IPP 2011/2012 \\
+Jméno a~přijmení: Pavol Loffay \\
+Login: xloffa00
+
+\setcounter{section}{1}
+\subsection{Úvod}
+Tento dokument stručně popisuje převod z~formátu JSON\footnote{Popsán
+v~RFC 4627} do XML\footnote{Dostupné na http://www.w3.org/TR/REC-xml/}
+v~programovacím jazyce \emph{Perl}, s~využitím níže uvedených knihoven. Dále 
+popisuje hlavní problémy, se~kterými jsem se při implementaci setkal.
+
+\subsection{Návrh řešení problému} 
+Hlavním implementačním problémem bylo správné načítání dat ve formátu
+JSON a~identifikování datových struktur. Následná konverze do formátu
+XML byla jednoduchá. Po analýze problému jsem se rozhodl použít knihovny pro práci 
+s~daty ve formátu JSON a~XML. Protože skript můžeme spouštět s~různými parametry,
+použil jsem knihovnu \texttt{Getopt::Long}, která zpracování
+parametrů značně ulehčuje.
+
+\subsection{Zpracování vstupního souboru}
+Pro korektní načítání vstupního textu jsem použil knihovnu \texttt{JSON::XS}.
+Jednou z~její výhod je, že automaticky kontroluje správnost formátu
+vstupních dat. Proto je nebylo potřebné explicitně ověřovat. 
+Po načtení celého vstupu do proměnné, bylo zapotřebí identifikovat datové struktury
+JSON. Pokud byl načten objekt, tak v~proměnné byl uložen jako 
+hash. Pokud bylo načtené pole, bylo uloženo opět do pole. Ostatní prvky bylo možno 
+rozlišit jednoduchým způsobem pomocí větvení programu.
+
+\subsubsection{Rozlišení řetězce od čísla}
+Skript má parametry, které umožňují transformaci hodnot dvojic typu
+\texttt{string} nebo \texttt{number} z~atributů na textové elementy. Proto 
+bylo zapotřebí tyto dva typy explicitně rozlišovat. K~tomu jsem použil
+modul \texttt{Data::Dumper}, který v~případe ak premňenná byla typu \texttt{string}
+tak k~ní přidá uvozovky.
+%Číslo jsem identifikoval vynásobením předpokladné
+%proměnné pro uložení čísla jedničkou a~následným porovnáním operátorem \texttt{eq}
+%se stejnou proměnnou před vynásobením.
+
+\subsubsection{Identifikování \texttt{true}, \texttt{false}, \texttt{null}}
+Zvolením správnych parametrů skriptu je možné docílit, aby hodnoty literálů
+\texttt{true}, \texttt{false} a~\texttt{null} byly transformovány na elementy
+\texttt{<true/> <false/> <null/>}. Proto bylo nutné rozlišovat tyto hodnoty, které
+\emph{Perl} nerozlišuje. Hodnoty typu \texttt{Bool} bylo možné identifikovat
+pomocí funkce \texttt{JSON::XS::is\_bool}, \texttt{null} jsem rozlišil funkcí \texttt{defined}.
+
+\subsection{Vytváření výstupu}
+%Pro vytvoření výstupního XML souboru jsem použil knihovnu \texttt{XML::Writer}.
+%To mi umožnilo efektivně vypisovat XML značky. Metody z~této knihovny
+%automaticky nahrazují problematické znaky jako jsou $\&$, $<$ a~$>$ na entity 
+%$\&amp;$,\ \ $\&lt;$ \dots. V případě, že nebyl zadán parametr \emph{-c}, bylo nutné
+%vypisovat retěžce jiným způsobem tak, aby nedocházelo k~vícenásobnému nahrazování.
+Pro vytvoření výstupního XML souboru jsem implementoval modul \texttt{xml\_writer}.
+Obsahuje metody pro vypisování \textbf{start, end} a~\textbf{empty} XML značek.
+Tyto metody mi umožnili efektivně vytvářet výsledný soubor.
+
+
+\subsection{Kontrola správnosti XML značky}
+Pro kontrolu XML značky bylo nutné vytvořit netriviální regulární výraz, který
+dokázal rozpoznat nevalidní XML značku. Potom se dalším regulárním výrazem
+nahradili všechny nepovolené znaky za \texttt{-}. Poté byla opět provedena kontrola
+validnosti značky.
+
+\subsection{Převod JSON do XML}
+Samotná konverze formátu probíhá ve~funkci \texttt{json2xml}, která se volá
+rekurzivně. Vstupu je načten do proměnné a~následně procházen v~této
+funkci. Dále následuje rozpoznávání typu proměnné, která může být hash, pole
+atd.. Pokud byla typu hash, nebo pole je funkce pro každou položku opět volaná rekurzivně.
+Vyžitím rekurze se daly jednoduchým způsobem identifikovat veškeré zanořené datové 
+struktury formátu JSON.
+
+\subsection{Rozšírení JPD}
+Implementace tohoto rozšíření spočívala v~tom, že bylo zapotřebí zjistit minimální
+možný počet nul, které bylo zapotřebí přidat ke každému indexu tak, aby měly všechny indexy
+stejný počet cifer. Nejprve bylo nutné zjistit kolik cifer bude mít poslední
+index pole, následně se pak vypočítal počet cifer aktuálního indexu a~provedla se
+korekce přidáním správného počtu nul.
+
+\end{document}
+
